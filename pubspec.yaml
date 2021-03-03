@@ -12,7 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   path:
-  path_provider:
+  path_provider: "1.6.9"
 
 dev_dependencies:
   flutter_test:

@@ -27,6 +27,7 @@ abstract class DataModel {
 
 extension CRUD on DataModel {
   /// This method let's you save your model locally.
+  // TODO: prevent save() method from replacing old files with new ones
   Future<void> save() async {
     String path = (await getApplicationDocumentsDirectory()).path;
     var file = File(join(path, 'db', toPath() + '.json'));
@@ -51,6 +52,9 @@ extension CRUD on DataModel {
     var dataString = file.readAsStringSync();
     fromMap(jsonDecode(dataString));
   }
+
+  // TODO: add an update() method that let's you update your old stored files/DataModels.
+  // TODO: add a delete() method to delete already existed stored files/DataModels.
 
   /// This method gives you the path of your DataModel
   String toPath() => '${toString()}/$id';
