@@ -28,49 +28,73 @@ abstract class DataModel {
 extension CRUD on DataModel {
   /// This method let's you save your model locally.
   // TODO: prevent save() method from replacing old files with new ones
-  Future<void> save() async {
+  Future<File> _createDB() async {
     String path = (await getApplicationDocumentsDirectory()).path;
-    var file = File(join(path, 'db', toPath() + '.json'));
-    creationDate = creationDate ?? DateTime.now();
-    file.createSync(recursive: true);
-    file.writeAsStringSync(jsonEncode(toMap()));
+    var file = File(join(path, 'db.json'));
+    if (!file.existsSync()) {
+      creationDate = creationDate ?? DateTime.now();
+      file.createSync(recursive: true);
+      file.writeAsStringSync(jsonEncode(toMap()));
+    }
+    return file;
+  }
+
+  Future<void> save() async {
     var db = await loadDB();
     if (db.containsKey(toString())) {
-      db[toString()].add(id);
+      if (!db[toString()].containsKey(id)) db[toString()][id] = toMap();
     } else {
-      db[toString()] = [];
-      db[toString()].add(id);
+      db[toString()] = {};
+      db[toString()][id] = toMap();
     }
-    var fileDB = File(join(path, 'db', 'db.json'));
+    var appDoc = await getApplicationDocumentsDirectory();
+    var fileDB = File(join(appDoc.path, 'db', 'db.json'));
     fileDB.writeAsStringSync(jsonEncode(db));
   }
 
   /// This method lets you load your model from local storage.
   Future<void> load() async {
-    String path = (await getApplicationDocumentsDirectory()).path;
-    var file = File(join(path, 'db', toPath() + '.json'));
-    var dataString = file.readAsStringSync();
-    fromMap(jsonDecode(dataString));
+    var db = await loadDB();
+    if (db.containsKey(toString())) {
+      if (db[toString()].containsKey(id)) {
+        fromMap(db[toString()][id]);
+      }
+    }
   }
 
-  // TODO: add an update() method that let's you update your old stored files/DataModels.
-  // TODO: add a delete() method to delete already existed stored files/DataModels.
+  /// This method lets you update your model from local storage.
+  Future<void> update() async {
+    var db = await loadDB();
+    if (db.containsKey(toString())) {
+      if (db[toString()].containsKey(id)) {
+        db[toString()][id] = toMap();
+        var appDoc = await getApplicationDocumentsDirectory();
+        var fileDB = File(join(appDoc.path, 'db', 'db.json'));
+        fileDB.writeAsStringSync(jsonEncode(db));
+      }
+    }
+  }
+
+  /// This method lets you delete your model from local storage.
+  Future<void> delete() async {
+    var db = await loadDB();
+    if (db.containsKey(toString())) {
+      if (db[toString()].containsKey(id)) {
+        db[toString()].remove(id);
+        var appDoc = await getApplicationDocumentsDirectory();
+        var fileDB = File(join(appDoc.path, 'db', 'db.json'));
+        fileDB.writeAsStringSync(jsonEncode(db));
+      }
+    }
+  }
 
   /// This method gives you the path of your DataModel
-  String toPath() => '${toString()}/$id';
-}
+  // String toPath() => '${toString()}/$id';
 
-/// This method let's you load your DataModels local Database
-Future<Map<String, dynamic>> loadDB() async {
-  String path = (await getApplicationDocumentsDirectory()).path;
-  try {
-    var file = File(join(path, 'db', 'db.json'));
-    file.createSync(recursive: true);
-    if (file.readAsStringSync() == '') return {};
+  /// This method let's you load your DataModels local Database
+  Future<Map<String, dynamic>> loadDB() async {
+    var file = await _createDB();
     var data = jsonDecode(file.readAsStringSync());
     return data;
-  } catch (e) {
-    print(e.toString());
-    return <String, dynamic>{};
   }
 }
